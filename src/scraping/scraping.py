@@ -50,9 +50,11 @@ class steam_scraper():
         out = {}
 
         # Find system requirements element
-        system_reqs = page.find("div", class_="sysreq_content active")
+        system_reqs = page.find("div", class_="sysreq_content")
         if system_reqs is None:
             return out
+        else:
+            system_reqs = system_reqs[0]
 
         full_reqs = page.find("div", class_="game_area_sys_req_full")
         if full_reqs is None:
