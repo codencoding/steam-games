@@ -7,7 +7,7 @@ import time
 import os
 
 
-class steam_scraper():
+class SteamScraper():
     def __init__(self, ROOT_DIR):
         self.ROOT_DIR = ROOT_DIR
         self.all_games_url = "https://store.steampowered.com/search/?term=&ignore_preferences=1&page="
@@ -205,3 +205,52 @@ class steam_scraper():
             print("Extracting games from store pages")
             self.extract_games(self.game_pages)
             self.games.to_csv(self.ROOT_DIR + "data/steam_games.csv", index=False)
+
+    # def collect_sys_reqs(self, chunksize=2000, starting_chunk=None, max_chunk=None):
+    def collect_sys_reqs(self, **kwargs):
+        chunksize = kwargs.get("chunksize")
+        if chunksize is None:
+            chunksize = 2000
+        default_max_chunk = int(np.ceil(self.games.shape[0] / chunksize))
+        if not(kwargs.get("max_chunk") is None):
+            max_chunk = kwargs["max_chunk"]
+            assert isinstance(max_chunk, int), "Max chunk must be an integer"
+            assert max_chunk >= 0, "Only a non-negative max chunk is valid"
+            assert max_chunk <= default_max_chunk, "Max chunk cannot go beyond the current max of {}".format(default_max_chunk)
+            max_chunk = max_chunk
+        else:
+            max_chunk = default_max_chunk
+            
+        starting_chunk = kwargs.get("starting_chunk")
+        if starting_chunk is None:
+            starting_chunk = 0
+        else:
+            assert isinstance(starting_chunk, int), "Starting chunk must be an integer"
+            assert starting_chunk >= 0, "Only non-negative starting chunk are valid"
+            assert starting_chunk <= max_chunk, "Max chunk given current settings is only {}. Starting chunk cannot be bigger than the max chunk.".format(max_chunk)
+            
+        fname_root = self.ROOT_DIR + "data/temp/chunksize_{}/".format(chunksize)
+        if not os.path.exists(fname_root):
+            os.mkdir(fname_root)
+        for chunk in range(starting_chunk, max_chunk):            
+            start = chunk * chunksize
+            end = (chunk * chunksize) + chunksize
+            if end > self.games.shape[0]:
+                end = self.games.shape[0] + 1
+            print("Starting chunk {}:{}-{}".format(chunk, start, end))
+            game_infos = []
+            # Begin fetching all data for a chunk
+            for ix in range(start, end):
+                print("\tProcessing game #{}".format(ix), end='\r')
+                target_game = self.games.iloc[ix]
+                game_info = self.get_game_info(target_game.href)
+                for key in game_info:
+                    target_game[key] = game_info[key]
+                game_infos.append(target_game)
+            try:
+                # Save chunk data to a temp file
+                game_infos = pd.DataFrame(game_infos).to_csv(fname_root + f"game_sys_reqs_{chunk}.csv", index=False)
+            except:
+                # If unable to write the data, save it
+                self.temp = game_infos
+                raise Exception("Unable to save file. Temporary data saved to self.temp attribute")
