@@ -236,7 +236,7 @@ class SteamScraper():
             start = chunk * chunksize
             end = (chunk * chunksize) + chunksize
             if end > self.games.shape[0]:
-                end = self.games.shape[0] + 1
+                end = self.games.shape[0]
             print("Starting chunk {}:{}-{}".format(chunk, start, end))
             game_infos = []
             # Begin fetching all data for a chunk
