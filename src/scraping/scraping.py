@@ -15,9 +15,6 @@ class SteamScraper():
         self.cpus = None
         self.cpus = self.initialize_cpu_df()
 
-    # def get_game_name(self, page):
-    #     return {"name":page.find("div", class_="apphub_AppName").text}
-
     def get_game_price(self, page):
         # TODO
         return {}

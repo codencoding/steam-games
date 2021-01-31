@@ -50,7 +50,7 @@ def proc_num_lookup(proc_num, cpus):
         return cpu["Processor_Base_Frequency"]
     return None
 
-def get_cpu_speed(cpu_str):
+def get_cpu_speed(cpu_str, cpus):
     if pd.isna(cpu_str):
         return None
     
@@ -65,7 +65,7 @@ def get_cpu_speed(cpu_str):
                 return None
         proc_num = proc_num[0].replace('k', 'K').replace(' ', '-')
         proc_num = re.sub(r'-+', '-', proc_num)
-        cpu_speed = proc_num_lookup(proc_num)
+        cpu_speed = proc_num_lookup(proc_num, cpus=cpus)
         if cpu_speed is None:
             return cpu_speed
     
@@ -73,3 +73,21 @@ def get_cpu_speed(cpu_str):
     cpu_speed = hrtz_convert(cpu_speed)
     
     return cpu_speed
+
+def preprocess_data(df, cpus):
+    sdata = df[["name", "href", "release_date", "min_processor", "min_memory",
+              "min_graphics", "min_storage"]]
+
+    # Drop any dates that can't be converted.
+    sdata["release_date"] = sdata.release_date.apply(dt_convert)    
+
+    # Process min_memory into interpretable RAM
+    sdata["min_memory"] = sdata["min_memory"].apply(mem_extract)
+
+    # Process min_storage into interpretable sizes
+    sdata["min_storage"] = sdata["min_storage"].apply(mem_extract)
+
+    # Process min_processor into Ghz
+    sdata["min_processor"] = sdata["min_processor"].apply(get_cpu_speed, cpus=cpus)
+
+    return sdata
